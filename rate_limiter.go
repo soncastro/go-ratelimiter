@@ -30,22 +30,24 @@ func (r *RedisDatastore) Set(key string, value string) error {
 }
 
 type Limiter struct {
-	datastore Datastore
-	ratelimit int
+	datastore     Datastore
+	ratelimit     int
+	blockDuration time.Duration
 }
 
-func NewLimiter(datastore Datastore, ratelimit int) *Limiter {
+func NewLimiter(datastore Datastore, ratelimit int, blockDuration time.Duration) *Limiter {
 	return &Limiter{
-		datastore: datastore,
-		ratelimit: ratelimit,
+		datastore:     datastore,
+		ratelimit:     ratelimit,
+		blockDuration: blockDuration,
 	}
 }
 
 func (l *Limiter) CheckLimit(key string, limitType string) (bool, error) {
 
 	infoStr, err := l.datastore.Get(key)
-	if err != nil {
-		panic(err)
+	if err != nil && err != redis.Nil {
+		panic(fmt.Errorf("error when getting key %q: %w", key, err))
 	}
 
 	var info LimiterInfo
@@ -85,8 +87,7 @@ func (l *Limiter) CheckLimit(key string, limitType string) (bool, error) {
 			}
 		}
 
-		// Set new block of 5 mins
-		blockedUntil := now.Add(5 * time.Minute)
+		blockedUntil := now.Add(l.blockDuration)
 		_ = l.datastore.Set("BLOCKED_"+key, blockedUntil.Format(time.RFC3339Nano))
 
 		return false, fmt.Errorf("rate limit exceeded, too many requests")

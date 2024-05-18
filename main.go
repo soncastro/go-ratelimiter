@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 )
 
 type Middleware struct {
@@ -45,12 +46,19 @@ func NewRedisDatastore() Datastore {
 }
 
 func main() {
+
+	blockTimeInSeconds, err := strconv.Atoi(os.Getenv("BLOCK_TIME_IN_SECONDS"))
+	if err != nil {
+		blockTimeInSeconds = 300
+	}
+	blockDuration := time.Duration(blockTimeInSeconds) * time.Second
+
 	rateLimitPerSec, err := strconv.Atoi(os.Getenv("RATE_LIMIT"))
 	if err != nil {
 		rateLimitPerSec = 1
 	}
 
-	rateLimiter := NewLimiter(NewRedisDatastore(), rateLimitPerSec)
+	rateLimiter := NewLimiter(NewRedisDatastore(), rateLimitPerSec, blockDuration)
 	rateLimiterMiddleware := &Middleware{
 		limiter: rateLimiter,
 		keyType: "RateLimiter",
@@ -61,7 +69,7 @@ func main() {
 		tokenRateLimitPerSec = 1
 	}
 
-	tokenRateLimiter := NewLimiter(NewRedisDatastore(), tokenRateLimitPerSec)
+	tokenRateLimiter := NewLimiter(NewRedisDatastore(), tokenRateLimitPerSec, blockDuration)
 	tokenRateLimiterMiddleware := &Middleware{
 		limiter: tokenRateLimiter,
 		keyType: "TokenRateLimiter",
@@ -72,7 +80,7 @@ func main() {
 	r.Use(rateLimiterMiddleware.LimiterMiddleware())
 	r.Use(tokenRateLimiterMiddleware.LimiterMiddleware())
 
-	r.GET("/example-endpoint", func(c *gin.Context) {
+	r.GET("/ratelimiter", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"message": "Success!",
 		})
