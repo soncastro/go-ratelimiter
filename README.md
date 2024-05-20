@@ -5,7 +5,7 @@ Rate Limiter é um projeto desenvolvido em Go destinado a limitar o número de s
 
 ## Como o projeto pode ser executado  
 Na raiz do projeto executar o comando `docker-compose up`  
-Lembrete: Se houver tentativa de execução com o comando `go run main.go rate_limiter.go` o arquivo config.env não será lido.
+Lembrete: Se houver tentativa de execução com o comando `go run main.go rate_limiter.go` o arquivo `config.env` não será lido.
 
 ## Request para teste manual
 `curl -i -X GET http://localhost:8080/ratelimiter`

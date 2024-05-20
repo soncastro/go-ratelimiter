@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"testing"
+	"time"
 )
 
 type LimiterInfoTest struct {
@@ -44,7 +45,7 @@ func (m *MockDatastore) Set(key string, value string) error {
 
 func TestCheckLimit(t *testing.T) {
 	mockDatastore := NewMockDatastore()
-	rateLimiter := NewLimiter(mockDatastore, 5)
+	rateLimiter := NewLimiter(mockDatastore, 5, 5*time.Second)
 	allowed, err := rateLimiter.CheckLimit("test_key", "RateLimiter")
 
 	if err != nil {
